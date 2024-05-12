@@ -1,1 +1,1 @@
-# log
+# Context based Logrus log wrapper
