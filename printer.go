@@ -1,9 +1,9 @@
 package log
 
 import (
-	"bytes"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // BufferWriter is implemented by several very common writers such as
@@ -12,6 +12,7 @@ type BufferWriter interface {
 	io.Writer
 	io.ByteWriter
 	io.StringWriter
+	fmt.Stringer
 }
 
 // Printer outputs string data using standard methods and panics on failure. It's
@@ -21,9 +22,9 @@ type Printer struct {
 	BufferWriter
 }
 
-// NewPrinter creates a new Printer instance on a default bytes.Buffer{}.
+// NewPrinter creates a new Printer instance on a default strings.Builder{}.
 func NewPrinter() Printer {
-	return Printer{&bytes.Buffer{}}
+	return Printer{&strings.Builder{}}
 }
 
 // NewPrinterOn creates a new Printer instance on the given BufferWriter (typically
