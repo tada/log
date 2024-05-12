@@ -93,6 +93,7 @@ func WithLogger(c context.Context, l logrus.FieldLogger) context.Context {
 	return context.WithValue(c, logKey{}, l)
 }
 
+// NewForwarder creates a new logger that logs unformatted output to the given io.Writer.
 func NewForwarder(out io.Writer, level logrus.Level) logrus.FieldLogger {
 	return &logrus.Logger{
 		Out:       out,
@@ -103,21 +104,30 @@ func NewForwarder(out io.Writer, level logrus.Level) logrus.FieldLogger {
 	}
 }
 
-func NewLogger(ctx context.Context, logDir string) (logrus.FieldLogger, context.CancelFunc, error) {
-	err := os.MkdirAll(logDir, 0755)
-	if err != nil {
-		return nil, nil, err
-	}
-	logFile := filepath.Join(logDir, "cli.log")
-	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, nil, err
-	}
-	cancel := func() {
-		_ = f.Close()
+// NewLogger creates a new logger that logs its output to a file named by logFileName or to stdout, in case
+// the logFileName is the empty string.
+func NewLogger(logFileName string) (logrus.FieldLogger, context.CancelFunc, error) {
+	var out io.Writer
+	var cancel context.CancelFunc
+	if logFileName != "" {
+		err := os.MkdirAll(filepath.Dir(logFileName), 0755)
+		if err != nil {
+			return nil, nil, err
+		}
+		f, err := os.OpenFile(logFileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			return nil, nil, err
+		}
+		cancel = func() {
+			_ = f.Close()
+		}
+		out = f
+	} else {
+		out = os.Stdout
+		cancel = func() {}
 	}
 	return &logrus.Logger{
-		Out:          f,
+		Out:          out,
 		Formatter:    Formatter("15:04:05.0000"),
 		Hooks:        make(logrus.LevelHooks),
 		Level:        logrus.DebugLevel,
